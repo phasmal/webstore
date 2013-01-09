@@ -19,8 +19,12 @@ object Args
             = new OptionType(name, description, takesValue)
     
     /** Creates and returns an instance of Command */
-    def cmd(name: String, description: String, parameters: Array[Parameter] = Array(), action: Settings = new Settings()) 
-            = new Command(name, description, parameters, action)
+    def cmd(name: String, 
+            description: String, 
+            parameters: Array[Parameter] = Array(), 
+            defaults: Settings = new Settings(), 
+            action: Settings => Int) 
+                = new Command(name, description, parameters, defaults, action)
             
     /** Creates and returns an array of parameters. */
     def params(parameters: Parameter*): Array[Parameter] = parameters.toArray

@@ -8,5 +8,5 @@ package webstore.args
  */
 class OptionType(val name: String, val description: String, val takesValue: Boolean = false)
 {
-    
+    def toTuple(): (String,OptionType) = (name, this)
 }

@@ -1,13 +1,30 @@
 package webstore.args
 
 /** A set of settings that define configuration values for a system. */
-class Settings(settings: Setting*)
+class Settings(settings: Array[Setting])
 {
-    val all = settings.toArray
-    val map = settings.map(_.toTuple).toMap
+    def this(settings: Setting*) = this(settings.toArray)
+    
+    val byName = settings.map(_.toTuple).toMap
     
     /** Returns the value of the option of the given name, null if it is not set. */
-    def get(name: String): String = map.get(name).get
+    def get(name: String): String = byName.get(name).get.value
+    
+    /** Returns a new settings object which contains all the settings in this one, plus the given 
+     *  setting.  If there is an existing setting in this with the same name as the given setting,
+     *  then only the given setting is included in the returned object.
+     */
+    def plus(setting: Setting) = new Settings((byName + (setting.name -> setting)).values.toArray)
+    
+    /** Returns anew settings object which contains all the settings in this one plus the given
+     *  settings. If there are existing setting in this with the same name as the given settings,
+     *  then only the ones from the given settings are included in the returned object.
+     */
+    def plus(otherSettings: Settings) =
+    {
+        val changedMap = otherSettings.byName.foldLeft(byName)((workingMap, tuple) => workingMap + tuple)
+        new Settings(changedMap.values.toArray)
+    }
 }
 
 /** A single setting giving a configuration value for a part of the system. 
@@ -16,6 +33,6 @@ class Settings(settings: Setting*)
  */
 class Setting(val name: String, val value: String)
 {
-    /** Returns a tuple of the name and value of this option. */
-    def toTuple(): (String,String) = (name, value)
+    /** Returns a tuple of the name and self of this setting. */
+    def toTuple(): (String,Setting) = (name, this)
 }
