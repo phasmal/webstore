@@ -14,8 +14,8 @@ package webstore.args
 class Command(
     val name: String,
     val description: String,
-    val parameters: Array[Parameter] = Array(),
-    val defaults: Settings = new Settings(),
+    val parameters: Array[Parameter],
+    val defaults: Settings,
     val action: Settings=>Int)
 {
     if (name.startsWith("-"))
@@ -24,9 +24,5 @@ class Command(
             "Command may not start with '-', given was '" + name + "'")
     }
     
-    /** Executes the command, returning a status code of 0 for success, or any other number to 
-     *  indicate an error
-     *  @return 0 on success, another integer otherwise
-     */
-    def exec(settings: Settings): Int = defaults.plus(settings)
+    def toTuple: (String, Command) = (name, this)
 }

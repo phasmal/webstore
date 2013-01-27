@@ -32,4 +32,10 @@ object Args
     /** Creates and returns an instance of Parameter */
     def param(name: String, description: String, optional: Boolean = false): Parameter 
             = new Parameter(name, description, optional)
+            
+    /** Creates and returns an instance of Settings containing the given settings. */
+    def defaults(defaults: Setting*): Settings = new Settings(defaults.toArray)
+    
+    /** Creates and returns a single setting with the given name and value */
+    def setting(name: String, value: String) = new Setting(name, value)
 }

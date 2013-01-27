@@ -14,17 +14,19 @@ class Settings(settings: Array[Setting])
      *  setting.  If there is an existing setting in this with the same name as the given setting,
      *  then only the given setting is included in the returned object.
      */
-    def plus(setting: Setting) = new Settings((byName + (setting.name -> setting)).values.toArray)
+    def +(setting: Setting) = new Settings((byName + (setting.name -> setting)).values.toArray)
     
     /** Returns anew settings object which contains all the settings in this one plus the given
      *  settings. If there are existing setting in this with the same name as the given settings,
      *  then only the ones from the given settings are included in the returned object.
      */
-    def plus(otherSettings: Settings) =
+    def +(otherSettings: Settings) =
     {
         val changedMap = otherSettings.byName.foldLeft(byName)((workingMap, tuple) => workingMap + tuple)
         new Settings(changedMap.values.toArray)
     }
+    
+    def toString = byName.toString
 }
 
 /** A single setting giving a configuration value for a part of the system. 
