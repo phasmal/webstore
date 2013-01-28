@@ -7,8 +7,13 @@ class Settings(settings: Array[Setting])
     
     val byName = settings.map(_.toTuple).toMap
     
-    /** Returns the value of the option of the given name, null if it is not set. */
-    def get(name: String): String = byName.get(name).get.value
+    /** Returns the value of the option of the given name, an Option which will contain the value if 
+     *  one matches. 
+     */
+    def get(name: String): Option[String] = byName.get(name).map(_.value)
+    
+    /** Returns the number of settings. */
+    def size: Int = settings.length
     
     /** Returns a new settings object which contains all the settings in this one, plus the given 
      *  setting.  If there is an existing setting in this with the same name as the given setting,
@@ -26,7 +31,7 @@ class Settings(settings: Array[Setting])
         new Settings(changedMap.values.toArray)
     }
     
-    def toString = byName.toString
+    override def toString = "{\n" + settings.map("  " + _.toString).mkString("\n") + "\n}"
 }
 
 /** A single setting giving a configuration value for a part of the system. 
@@ -37,4 +42,6 @@ class Setting(val name: String, val value: String)
 {
     /** Returns a tuple of the name and self of this setting. */
     def toTuple(): (String,Setting) = (name, this)
+    
+    override def toString = name + " = " + value
 }

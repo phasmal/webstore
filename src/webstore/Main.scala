@@ -9,7 +9,7 @@ object Main
     /**
      * @param args the command line arguments
      */
-    def main(args: Array[String]): Unit =
+    def main(args: Array[String]): Int =
     {
         return argSpec(
             options(
