@@ -3,6 +3,8 @@ package webstore
 import webstore.args.Args._
 import webstore.args._
 
+import java.io.File
+
 object Main
 {
     /**
@@ -20,12 +22,10 @@ object Main
                     "Updates the store with the current state of the given directory.",
                     params(
                         param("source","The directory to update the store state with the content of.")),
-                    defaults(
-                        setting("aDefault","hello default boy")),
-                    (settings: Settings) => 
+                    defaults(),
+                    (settings: Settings) =>
                     {
-                        println("Hello Update Boy!")
-                        println(settings)
+                        new Store(new File(settings.get("store").get))
                         0
                     }
                 )

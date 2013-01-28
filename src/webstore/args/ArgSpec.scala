@@ -42,12 +42,14 @@ class ArgSpec(programName: String, options: Array[OptionType] = Array(), command
             {
                 val (command, parameterArgs)
                     = getCommand(commands.map(_.toTuple).toMap, remainingArgs)
-                    
+                
                 val (paramSettings, leftoverArgs) = getParameters(command.parameters, parameterArgs)
+                
                 if (leftoverArgs.length > 0)
                 {
                     System.err.println("WARNING: some extra arguments ignored: " + leftoverArgs)
                 }
+                
                 command.action(command.defaults + optionSettings + paramSettings)
             }
             else
@@ -75,10 +77,17 @@ class ArgSpec(programName: String, options: Array[OptionType] = Array(), command
     
     private def commandUsage(commands: Array[Command]): String 
         = commands.map(c => 
-            "   " + c.name + ":\n" + 
+            "   " + c.name + " " + paramString(c) + "\n" + 
             "     " + c.description + "\n" +
-            "     parameters\n" +
-            "       " + paramUsage(c) + "\n").mkString
+            "     " + paramUsage(c) + "\n").mkString
+        
+    private def paramString(command: Command): String
+        = command.parameters.map(
+            (param) => 
+                (if (param.optional) "[" else "") +
+                param.name +
+                (if (param.optional) "]" else "")
+            ).mkString(" ")
     
     private def paramUsage(command: Command): String
         = command.parameters.map(p => "    " + p.name + ": " + p.description).mkString
@@ -150,15 +159,23 @@ class ArgSpec(programName: String, options: Array[OptionType] = Array(), command
     }
     
     private def getParameters(
-        paramNames: Array[Parameter], args: Array[String]): (Settings, Array[String]) = 
+        params: Array[Parameter], args: Array[String]): (Settings, Array[String]) = 
     {
-        if (args.length > 0 && paramNames.length > 0)
+        if (args.length > 0 && params.length > 0)
         {
-            val (paramSettings, leftoverArgs) = getParameters(paramNames.tail, args.tail)
-            return (new Settings(setting(paramNames.head.name, args.head)) + paramSettings, leftoverArgs)
+            val (paramSettings, leftoverArgs) = getParameters(params.tail, args.tail)
+            return (new Settings(setting(params.head.name, args.head)) + paramSettings, leftoverArgs)
         }
         else // either we've run out of params to match against, or args to match with
         {
+            val mandatoryParams = params.filter(!_.optional)
+            if (mandatoryParams.length > 0)
+            { 
+                throw new ArgParseException(
+                    "Mandatory parameters were not specified: " 
+                    + mandatoryParams.map(_.name).mkString(", "))
+            }
+            
             return (new Settings(), args)
         }
     }
