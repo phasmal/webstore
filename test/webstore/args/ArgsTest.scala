@@ -14,6 +14,7 @@ class ArgsTest extends FunSuite
         var length = -1
         
         argSpec(
+            "",
             options(),
             commands(
                 cmd("b", "", params(), defaults(),
@@ -35,6 +36,7 @@ class ArgsTest extends FunSuite
         var value:Option[String] = None
         
         val spec = argSpec(
+            "",
             options(
                 opt("a", "", true)
             ),
@@ -67,6 +69,7 @@ class ArgsTest extends FunSuite
         var s = new Settings()
         
         val spec = argSpec(
+            "",
             options(
                 opt("a", "", true),
                 opt("b", "", true)

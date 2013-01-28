@@ -3,17 +3,17 @@ package webstore
 import webstore.args.Args._
 import webstore.args._
 
-object Main 
+object Main
 {
-
     /**
      * @param args the command line arguments
      */
-    def main(args: Array[String]): Int =
+    def main(args: Array[String]): Unit =
     {
-        return argSpec(
+        argSpec(
+            "webstore",
             options(
-                opt("store", "The location of the store to connect to")
+                opt("store", "The location of the store to connect to", true)
             ),
             commands(
                 cmd("update", 
@@ -32,5 +32,4 @@ object Main
             )
         ).actOn(args)
     }
-
 }

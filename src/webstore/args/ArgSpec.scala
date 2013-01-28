@@ -1,16 +1,31 @@
 package webstore.args
 
 import scala.collection.immutable.Stack
-import webstore.args.Args.setting
+import webstore.args.Args._
 
 /** A specification of a set of arguments specifying to a command-line invocation of a program. 
+ *  @param programName the name of the program
  *  @param options a set of options, any of which may be specified in the args, prior to any command
  *  @param commands a set of commands, one of which must be specified in the args
  */
-class ArgSpec(options: Array[OptionType] = Array(), commands: Array[Command] = Array())
+class ArgSpec(programName: String, options: Array[OptionType] = Array(), commands: Array[Command] = Array())
 {
-    val optionMap = options.map(_.toTuple).toMap
-    val commandMap = commands.map(_.toTuple).toMap
+    val helpOption = opt("help", "Show the help/usage screen")
+    
+    /** The usage string for this argspec. */
+    def usage : String 
+        = "Usage:\n" +
+          programName + " [options*] command [parameters*]\n" +
+          "\n" +
+          "Commands:\n" +
+          commandOverview(commands) +
+          "\n" +
+          "Options:\n" +
+          "   (asterisk '*' following a name means that option takes a value)\n" +
+          optionUsage(options) +
+          "\n" +
+          "Command Detail:\n" +
+          commandUsage(commands)
     
     /** Parses the given command-line arguments, calling the appropriate command. If the args are 
      *  not appropriate for this argspec, exits the application and outputs a usage message.
@@ -18,34 +33,61 @@ class ArgSpec(options: Array[OptionType] = Array(), commands: Array[Command] = A
      */
     def actOn(args: Array[String]): Int =
     {
-        val (optionSettings, remainingArgs) = getOptions(args)
-        val (command, parameterArgs) = getCommand(remainingArgs)
-        val (paramSettings, leftoverArgs) = getParameters(parameterArgs, command.parameters)
-        if (leftoverArgs.length > 0)
+        try
         {
-            System.err.println("WARNGING: some extra arguments not interpreted: " + leftoverArgs)
+            val (optionSettings, remainingArgs) 
+                = getOptions((options :+ helpOption).map(_.toTuple).toMap, args)
+            
+            if (optionSettings.get(helpOption.name) == None)
+            {
+                val (command, parameterArgs)
+                    = getCommand(commands.map(_.toTuple).toMap, remainingArgs)
+                    
+                val (paramSettings, leftoverArgs) = getParameters(command.parameters, parameterArgs)
+                if (leftoverArgs.length > 0)
+                {
+                    System.err.println("WARNING: some extra arguments ignored: " + leftoverArgs)
+                }
+                command.action(command.defaults + optionSettings + paramSettings)
+            }
+            else
+            {
+                printf(usage)
+                0
+            }
         }
-        command.action(command.defaults + optionSettings + paramSettings)
+        catch
+        {
+            case e: ArgParseException => 
+                System.err.println("Error: " + e.message + "\n\n" + usage)
+                return -1
+        }
     }
+          
+    private def commandOverview(commands: Array[Command]): String
+        = commands.map(c => "   " + c.name + ": " + c.description + "\n").mkString
     
-    private def getParameters(args: Array[String], paramNames: Array[Parameter]): (Settings, Array[String]) = 
-    {
-        if (args.length > 0 && paramNames.length > 0)
-        {
-            val (remainingParams, leftoverArgs) = getParameters(args.tail, paramNames.tail)
-            return (new Settings(setting(paramNames.head.name, args.head)) + remainingParams, leftoverArgs)
-        }
-        else // either we've run out of params to match against, or args to match with
-        {
-            return (new Settings(), args)
-        }
-    }
+    private def optionUsage(options: Array[OptionType]): String 
+        = options.map(o => 
+            "   " + o.name
+            + (if (o.takesValue) "*" else "") 
+            + " - " + o.description + "\n").mkString
     
-    private def getOptions(args: Array[String]): (Settings, Array[String]) =
+    private def commandUsage(commands: Array[Command]): String 
+        = commands.map(c => 
+            "   " + c.name + ":\n" + 
+            "     " + c.description + "\n" +
+            "     parameters\n" +
+            "       " + paramUsage(c) + "\n").mkString
+    
+    private def paramUsage(command: Command): String
+        = command.parameters.map(p => "    " + p.name + ": " + p.description).mkString
+    
+    private def getOptions(optionMap: Map[String, OptionType], args: Array[String]): (Settings, Array[String]) =
     {
         def recurse(name: String, value: String, remainingArgs: Array[String]): (Settings, Array[String]) = 
         {
-            val (settings, argRemainder) = getOptions(remainingArgs)
+            val (settings, argRemainder) = getOptions(optionMap, remainingArgs)
             return (settings + setting(name, value), argRemainder)
         }
         
@@ -79,7 +121,7 @@ class ArgSpec(options: Array[OptionType] = Array(), commands: Array[Command] = A
                 // no match for option name
                 case None => 
                     System.err.println("WARNING: no match for option name, ignoring option " + name)
-                    return getOptions(args.tail)
+                    return getOptions(optionMap, args.tail)
             }
         }
         else
@@ -88,7 +130,7 @@ class ArgSpec(options: Array[OptionType] = Array(), commands: Array[Command] = A
         }
     }
     
-    private def getCommand(args: Array[String]): (Command, Array[String]) = 
+    private def getCommand(commandMap: Map[String, Command], args: Array[String]): (Command, Array[String]) = 
     {
         if (args.length > 0)
         {
@@ -96,12 +138,28 @@ class ArgSpec(options: Array[OptionType] = Array(), commands: Array[Command] = A
             commandMap.get(commandName) match
             {
                 case Some(command) => return (command, args.tail)
-                case None => throw new ArgParseException("Command specified '" + commandName + "' is not a valid command")
+                case None => 
+                    throw new ArgParseException(
+                            "Command specified '" + commandName + "' is not a valid command")
             }
         }
         else
         {
             throw new ArgParseException("No command specified")
+        }
+    }
+    
+    private def getParameters(
+        paramNames: Array[Parameter], args: Array[String]): (Settings, Array[String]) = 
+    {
+        if (args.length > 0 && paramNames.length > 0)
+        {
+            val (paramSettings, leftoverArgs) = getParameters(paramNames.tail, args.tail)
+            return (new Settings(setting(paramNames.head.name, args.head)) + paramSettings, leftoverArgs)
+        }
+        else // either we've run out of params to match against, or args to match with
+        {
+            return (new Settings(), args)
         }
     }
     
