@@ -1,26 +1,26 @@
 package webstore
 
 import java.io.File
+import webstore.store._
+import webstore.store.disk._
 
 /**
  * A store that can store a file/directory hierarchy.
  * @param location the directory that the store is/should be located in
+ * @param filesystem the filesystem the location is inside. Default is local disk filesystem.
  * @throws IllegalArgumentException if location is not a valid directory path (exists and is not a 
  *                                  directory, or cannot be created as a directory)
  */
-class Store(location: File)
+class Store(location: Path, filesystem: Filesystem = new DiskFilesystem())
 {
-        
     /** the directory containing the store versions */
-    private val versions = new File(location, "versions")
+    private val versions = filesystem.getDir(location.subPath("versions"))
     /** the directory containing the store versions */
-    private val files = new File(location, "files")
+    private val files = filesystem.getDir(location.subPath("files"))
     
     
-    // create all dirs or error if not possible
-    mkdir(location, "location")
-    mkdir(versions, "versions")
-    mkdir(files, "files")
+    versions.make()
+    files.make()
     
     /** 
      * Updates the store so that the current version matches the contents of the given directory.
@@ -31,28 +31,5 @@ class Store(location: File)
     def update(sourceDir: File) =
     {
         
-    }
-    
-    private def mkdir(path: File, name: String) = 
-    {
-        if (path == null || (path.exists && !path.isDirectory)) 
-        {
-            throw new IllegalArgumentException(
-                name + " must be a valid directory path " +
-                "(is " + (if (path == null) "null" else path.getAbsolutePath) + " instead)")
-                                               
-        }
-        
-        if (!path.exists)
-        {
-            val dirCreated = path.mkdirs
-            if (!dirCreated)
-            {
-                throw new IllegalArgumentException(
-                    "Could not create dir at " + name + ", " + name + " must be a valid directory "
-                    + "path (" + name + " = '" + path.getAbsolutePath + "')")
-            }
-        }
-        // POST path exists and is a directory
     }
 }

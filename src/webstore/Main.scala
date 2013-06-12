@@ -25,7 +25,9 @@ object Main
                     defaults(),
                     (settings: Settings) =>
                     {
-                        new Store(new File(settings.get("store").get))
+                        // TODO[RM] add settings.getFile which attempts file creation from string and return option which is OK if new File worked
+                        // TODO[RM] unify this with the virtual filesystem concept
+                        new Store(new File(settings.get("store").get)).update(new File(settings.get("source").get))
                         0
                     }
                 )
